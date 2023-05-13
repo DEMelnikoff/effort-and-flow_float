@@ -1008,6 +1008,7 @@ const dmPsych = (function() {
       nPress: 0,       // total number of trials
       in_target: [],   // whether or not the ball was in the target at each frame
       glitch: [],      // whethr or not the ball left the canvas
+      score: 0,
     };
 
     // run float game
@@ -1041,38 +1042,27 @@ const dmPsych = (function() {
       // construct text
       function text(c) {
 
-        if (warning) {
-          c.font = "bold 25px Arial";
-          c.fillStyle = 'red';
-          c.fillText("Please keep your mouse inside the play area.", 75, 350);          
-        }
-
-        if (intro <= 3) {
-          c.font = "bold 20px Arial";
-          c.fillStyle = 'red';
-          c.fillText("Shoot the ball through the hole.", 75, 60);
+        if (game.data.score == 0) {
+          c.font = "16px Arial";
+          c.fillStyle = 'white';
+          c.fillText("Tap your spacebar to shoot the ball upwards.", 60, 340);
+          c.fillText("Tap at just the right speed to keep the ball", 60, 360);
+          c.fillText("inside the target. For every second the ball", 60, 380);
+          c.fillText("hovers inside the target, you'll earn a point.", 60, 400);    
         };
 
-        if (game.data.totalTrials == 0 && intro <= 2) {
+        if (game.data.score > 0 & game.data.score < 4) {
           c.font = "16px Arial";
           c.fillStyle = "white";
-          c.fillText("Step 1: Click and hold the ball. Keeping your cursor in the play area,", 75, 100);
-          c.fillText("pull the ball to the left to draw your sling.", 75, 120);
+          c.fillText("Great job! Now, try to earn as many points as", 60, 380);
+          c.fillText("possible by keeping the ball inside the target.", 60, 400);
         };
 
-        if (game.data.totalTrials == 0 && intro > 0 && intro <= 2) {
+        if (game.data.score == 4) {
           c.font = "16px Arial";
           c.fillStyle = "white";
-          c.fillText("Step 2: Aim at the hole,", 75, 160);
-          c.fillText("then release the ball to launch.", 75, 180);
-        };
-
-        if (game.data.totalTrials == 1 && intro > 1 && intro <= 3) {
-          c.font = "16px Arial";
-          c.fillStyle = "white";
-          c.fillText("Good job! Please spend the next few", 75, 100);
-          c.fillText("minutes playing Hole in One. We'll let", 75, 120);
-          c.fillText("you know when time is up.", 75, 140);
+          c.fillText("Now you've got the hang of it! Keep playing", 60, 380);
+          c.fillText("and we'll let you know when time is up.", 60, 400);
         };
       };
 
@@ -1130,6 +1120,8 @@ const dmPsych = (function() {
         
         ctx.fillStyle = 'black';
         ctx.fillRect(0, 0, c.width, c.height);
+
+        text(ctx)
 
         ctx.font = "bold 40px Arial";
         ctx.fillStyle = 'red';
