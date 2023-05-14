@@ -542,7 +542,7 @@ var exp = (function() {
 
 }());
 
-const timeline = [exp.intro_task1, exp.task1, exp.consent, exp.surveyIntro, exp.intro_task1, exp.task1, exp.task1_Qs,
+const timeline = [exp.consent, exp.intro_task1, exp.task1, exp.surveyIntro, exp.intro_task1, exp.task1, exp.task1_Qs,
     exp.intro_task2, exp.task2_practice, exp.postPractice_task2, exp.task2, exp.task2_Qs,
     exp.demographics, exp.save_data];
 

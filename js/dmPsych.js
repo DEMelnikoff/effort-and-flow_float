@@ -1160,7 +1160,7 @@ const dmPsych = (function() {
         };
 
         // draw score
-        ctx.fillStyle = 'grey';
+        ctx.fillStyle = '#D3D3D3';
         let score_width = ctx.measureText(`Points: ${game.data.total_score}`).width;
         ctx.fillText(`Points: ${game.data.total_score}`, (c.width / 2) - (score_width / 2), 80);
      
