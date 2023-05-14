@@ -21,7 +21,7 @@ var exp = (function() {
     if (settings.effort == 'high' && settings.difficulty == 'hard') {
         settings.correctAnswers = ['True', '50%'];
         settings.gravity = 3.5;
-        settings.target_force = .041
+        settings.target_force = .042
         settings.slope = 3.5;
     } else if (settings.effort == 'low' && settings.difficulty == 'hard') {
         settings.correctAnswers = ['True', '10%'];
@@ -146,15 +146,17 @@ var exp = (function() {
         canvas_size: [475, 900],
         ball_color: 'white',
         ball_size: 16,
-        target_size: 50,
+        target_size: 80,
         gravity: settings.gravity,
         target_force: settings.target_force,
         slope: settings.slope,
-        prompt: `<div class='instructions'>
+        prompt: `<div class='instructions' style='text-align:left; font-size: 16px; line-height: 18px; width: 900px'>
 
-        <p><strong>Hover Ball</strong>. The goal of Hover Ball is keep your ball in the target for as long as possible.<br>
-        Follow the instructions in the game area to play. 
-        We'll let you know when time is up.</p></div>`,
+        <p><strong>Hover Ball</strong>. The goal of Hover Ball is to earn as many points as possible.</p>
+        <p>Points are earned by tapping your spacebar. When you tap your spacebar, the ball will shoot upwards. The faster you tap, the higher the ball will go.
+        If you tap your spacebar while the ball is in one of the colored zones, you'll earn points.</p>
+        <p>The most valuable zone is red zone: it is worth 10 points. The blue zone is worth 3 points, the yellow zone is worth 2 points, and the green zone is worth 1 point.</p>
+        <p>Now, try to earn as many points as possible! We'll let you know when time is up.</p></div>`,
         data: {block: 'holeInOne'}
     };
 
@@ -540,7 +542,7 @@ var exp = (function() {
 
 }());
 
-const timeline = [exp.consent, exp.intro_task1, exp.task1, exp.surveyIntro, exp.intro_task1, exp.task1, exp.task1_Qs,
+const timeline = [exp.intro_task1, exp.task1, exp.surveyIntro, exp.intro_task1, exp.task1, exp.task1_Qs,
     exp.intro_task2, exp.task2_practice, exp.postPractice_task2, exp.task2, exp.task2_Qs,
     exp.demographics, exp.save_data];
 
