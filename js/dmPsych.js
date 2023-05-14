@@ -1035,6 +1035,7 @@ const dmPsych = (function() {
       let height_adj = -90;
       let zone_values = [2, 10, 1, 3];
       let increment = false;
+      let pps = [];
       ctx.font = "30px Arial";
       let txt_height = ctx.measureText(`+ 2`).actualBoundingBoxAscent + ctx.measureText(`+ 2`).actualBoundingBoxDescent;
 
@@ -1133,7 +1134,10 @@ const dmPsych = (function() {
             color_weight = [.5, .5, .5, .5];
           }, 100);
           Body.applyForce( ball, {x: ball.position.x, y: ball.position.y}, {x: 0, y: -force});
-          console.log(game.data.nPress / game.data.tPress[game.data.tPress.length - 1]);
+          //console.log(game.data.nPress / game.data.tPress[game.data.tPress.length - 1]);
+          let pps_inst = 1 / (game.data.tPress[game.data.tPress.length - 1] - game.data.tPress[game.data.tPress.length - 2]);
+          if (pps_inst) pps.push(pps_inst);
+          console.log(pps.reduce((partialSum, a) => partialSum + a, 0) / pps.length);
         }
       };
 

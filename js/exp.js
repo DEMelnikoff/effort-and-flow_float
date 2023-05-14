@@ -21,23 +21,23 @@ var exp = (function() {
     if (settings.effort == 'high' && settings.difficulty == 'hard') {
         settings.correctAnswers = ['True', '50%'];
         settings.gravity = 3.5;
-        settings.target_force = .042
-        settings.slope = 3.5;
+        settings.target_force = .052
+        settings.slope = 1.5;
     } else if (settings.effort == 'low' && settings.difficulty == 'hard') {
         settings.correctAnswers = ['True', '10%'];
         settings.gravity = 3.5;
-        settings.target_force = .08
-        settings.slope = 3.5;
+        settings.target_force = .1
+        settings.slope = 1.5;
     } else if (settings.effort == 'high' && settings.difficulty == 'easy') {
         settings.correctAnswers = ['True', '90%'];
         settings.gravity = .5;
-        settings.target_force = .0073
-        settings.slope = 1.5;
+        settings.target_force = .0071
+        settings.slope = 3.5;
     } else if (settings.effort == 'low' && settings.difficulty == 'easy') {
         settings.correctAnswers = ['True', '50%'];
         settings.gravity = .5;
         settings.target_force = .014;
-        settings.slope = 1.5;
+        settings.slope = 3.5;
     };
     
     // save condition and URL data
@@ -542,7 +542,7 @@ var exp = (function() {
 
 }());
 
-const timeline = [exp.consent, exp.intro_task1, exp.task1, exp.surveyIntro, exp.intro_task1, exp.task1, exp.task1_Qs,
+const timeline = [exp.intro_task1, exp.task1, exp.consent, exp.surveyIntro, exp.intro_task1, exp.task1, exp.task1_Qs,
     exp.intro_task2, exp.task2_practice, exp.postPractice_task2, exp.task2, exp.task2_Qs,
     exp.demographics, exp.save_data];
 
