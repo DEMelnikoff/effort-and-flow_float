@@ -27,7 +27,7 @@ var exp = (function() {
         settings.correctAnswers = ['True', '10%'];
         settings.gravity = 3.5;
         settings.target_force = .08
-        settings.slope = 2;
+        settings.slope = 3.5;
     } else if (settings.effort == 'high' && settings.difficulty == 'easy') {
         settings.correctAnswers = ['True', '90%'];
         settings.gravity = .5;
