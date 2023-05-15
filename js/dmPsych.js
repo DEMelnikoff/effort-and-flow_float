@@ -1185,8 +1185,6 @@ const dmPsych = (function() {
         ctx.fillRect(0, 0, c.width, c.height);
         ctx.font = "30px Arial";
 
-
-        drawCircle();
         drawZones();
         drawScore();
         showOutcome();
