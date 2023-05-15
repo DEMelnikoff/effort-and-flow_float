@@ -26,7 +26,7 @@ var exp = (function() {
     } else if (settings.effort == 'low' && settings.difficulty == 'hard') {
         settings.correctAnswers = ['True', '10%'];
         settings.gravity = 3.5;
-        settings.target_force = .11
+        settings.target_force = .105
         settings.slope = .00015;
     } else if (settings.effort == 'high' && settings.difficulty == 'easy') {
         settings.correctAnswers = ['True', '90%'];
