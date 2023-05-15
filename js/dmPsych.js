@@ -1004,168 +1004,137 @@ const dmPsych = (function() {
     // data to save
     game.data = {
       ball_locs: [],   // ball's y position at each frame
-      tPress: [0],      // timestamp of each button press
-      nPress: 0,       // total number of trials
-      glitch: [],      // whethr or not the ball left the canvas
-      score: [],
-      total_score: 0
+      tPress: [0],     // timestamp of each button press
+      nPress: 0,       // total number of button presses
+      glitch: [],      // true each time the ball leaves the canvas
+      score: [],       // array of points earned on each click
+      total_score: 0,  // sum of all points
+      press_rate: [],  // array of instantaneous rates of button-pressing
+      start_time: 0,   // time of first button-press
     };
 
     // run float game
     game.run = function(c, trial) {
-      let mouse, mouseConstraint;
-      let gravity = trial.gravity;
-      let ctx = c.getContext('2d');
-      let ceiling = Bodies.rectangle(c.width / 2, -30, c.width, 100, { isStatic: true });
-      let floor = Bodies.rectangle(c.width / 2, c.height + 30, c.width, 100, { isStatic: true });
-      let ball = Bodies.circle(c.width / 2, 280, trial.ball_size);
-      let int = trial.target_force * trial.slope;
-      let mid_pos = c.height / 2;
-      let bottom_pos = c.height - (trial.ball_size + 20);
-      let b = (trial.target_force - int) / (bottom_pos - mid_pos);
-      let color_weight = [.5, .5, .5, .5];
-      let yLoc, force, start_time;
-      let sparks = [];
-      let rgb = {
-        zone1: [240, 228, 66],
-        zone2: [213, 94, 0],
-        zone3: [0, 158, 115],
-        zone4: [86, 180, 233],
-      };
-      let height_adj = -90;
-      let zone_values = [2, 10, 1, 3];
-      let increment = false;
-      let pps = [];
+      let ctx = c.getContext('2d');  // get context
+
+      // add bodies to world
+      let ceiling = Bodies.rectangle(c.width / 2, -30, c.width, 100, { isStatic: true });  // create ceiling
+      let floor = Bodies.rectangle(c.width / 2, c.height + 30, c.width, 100, { isStatic: true });  // create floor
+      let ball = Bodies.circle(c.width / 2, 280, trial.ball_size);  // create ball
+      engine.world.gravity.y = trial.gravity;  // set gravity
+      World.add(engine.world, [floor, ceiling, ball]);  // add to world
+
+      // force
+      let mid_pos = c.height / 2;  // middle of canvas
+      let bottom_pos = c.height - (trial.ball_size + 20);  // ball's position while on floor
+      let max_force = trial.target_force - trial.slope*(mid_pos - bottom_pos);  // maximum force given target force and slope
+      let force;
+
+      // outcomes
+      let outcomes = [];  // array of outcomes to display
       ctx.font = "30px Arial";
-      let txt_height = ctx.measureText(`+ 2`).actualBoundingBoxAscent + ctx.measureText(`+ 2`).actualBoundingBoxDescent;
+      let outcome_height = ctx.measureText(`+ 2`).actualBoundingBoxAscent + ctx.measureText(`+ 2`).actualBoundingBoxDescent; // height of outcome text
 
-      engine.world.gravity.y = trial.gravity;
-      World.add(engine.world, [floor, ceiling, ball]);
-
-      // track location of ball
-      Events.on(engine, "beforeUpdate", function() { 
-        yLoc = ball.position.y;
-        if (yLoc > c.height || yLoc < 0) {
-          World.remove(engine.world, ball);
-          ball = Bodies.circle(c.width / 2, 280, 16);
-          World.add(engine.world, ball);
-          game.data.glitch.push(true);
-        };
-        force =  Math.max(trial.target_force, int + (bottom_pos - yLoc)*b) * (.5 / fpsAdjust);
-        game.data.ball_locs.push(yLoc);
-      });
-
+      // zones
+      let rgb = [[240, 228, 66], [213, 94, 0], [0, 158, 115], [86, 180, 233]];  // color of each zone when at max luminance
+      let zone1_shift = -90;  // distance between top of zone 1 and middle of canvas
+      let zone_size = 63;  // height of each zone
+      let zone_values = [2, 10, 1, 3];  // points associated with each zone
+      let color_weight = [.5, .5, .5, .5];  // weights applied to colors used for zones     
 
       // make new spark
-      function MakeSpark(zone, zone_idx, points) {
+      function MakeOutcome(zone_idx, points) {
         this.vx = Math.random() + 2;
         this.vy = -3 - Math.random();
         this.weight = .3;
-        this.red = Math.floor(Math.random() * 2 + 1);
-        this.green = Math.floor(Math.random() * 2 + 1);
-        this.blue = Math.floor(Math.random() * 2 + 1);
         this.age = 0;
-        this.zone = zone;
         this.zone_idx = zone_idx;
         this.points = points;
       };
 
-      function explode() {
-        sparks.forEach((spark) => {
-          for (let i = 0; i < 1; i++) {
-            let y_init =  (c.height / 2) + height_adj + (60 * spark.zone_idx) + 30 + (txt_height / 2)
-            let trailAge = spark.age + i;
-            let x = (c.width / 2) + spark.vx * trailAge;
-            let y = y_init + spark.vy * trailAge + spark.weight * trailAge * spark.weight * trailAge;
-            let fade = 1 / (5 - i);
-            let r = Math.floor(spark.red * fade);
-            let g = Math.floor(spark.green * fade);
-            let b = Math.floor(spark.blue * fade);
-            ctx.beginPath();
-            ctx.font = "bold 45px Arial";
-            ctx.strokeStyle = 'black';
-            ctx.lineWidth = 2;
-            ctx.fillStyle = `rgb(${rgb[spark.zone][0]}, ${rgb[spark.zone][1]}, ${rgb[spark.zone][2]})`;
-            ctx.fillText(`+${spark.points}`, x, y);    
-            ctx.strokeText(`+${spark.points}`, x, y);    
-          };
-          spark.age = spark.age + (2 * fpsAdjust);
+      // show outcome
+      function showOutcome() {
+        outcomes.forEach((outcome) => {
+          let y_init =  (c.height / 2) + zone1_shift + (60 * outcome.zone_idx) + 30 + (outcome_height / 2);
+          let x = (c.width / 2) + outcome.vx * outcome.age;
+          let y = y_init + outcome.vy * outcome.age + outcome.weight * outcome.age * outcome.weight * outcome.age;
+          ctx.beginPath();
+          ctx.font = "bold 45px Arial";
+          ctx.strokeStyle = 'black';
+          ctx.lineWidth = 2;
+          ctx.fillStyle = `rgb(${rgb[outcome.zone_idx][0]}, ${rgb[outcome.zone_idx][1]}, ${rgb[outcome.zone_idx][2]})`;
+          ctx.fillText(`+${outcome.points}`, x, y);    
+          ctx.strokeText(`+${outcome.points}`, x, y);    
+          outcome.age = outcome.age + (2 * fpsAdjust);
         });
       };
 
+      // track location of ball
+      Events.on(engine, "beforeUpdate", function() { 
+        if (ball.position.y > c.height || ball.position.y < 0) {
+          World.remove(engine.world, ball);
+          ball = Bodies.circle(c.width / 2, 280, trial.ball_size);
+          World.add(engine.world, ball);
+          game.data.glitch.push(true);
+        };
+        force =  Math.max(trial.target_force, max_force + (ball.position.y - bottom_pos)*trial.slope) * (.5 / fpsAdjust);
+        game.data.ball_locs.push(ball.position.y);
+      });
+
+      // keydown function
       document.body.onkeydown = function(e) {
         if (e.key == " " || e.code == "Space" || e.keyCode == 32) {
 
-          increment = true;
-
+          // time of each press in seconds from first press
           if (game.data.nPress == 0) {
-            start_time = performance.now();
+            game.data.start_time = performance.now();
           } else {
-            let press_time = (performance.now() - start_time) / 1000;
+            let press_time = (performance.now() - game.data.start_time) / 1000;
             game.data.tPress.push(press_time);
           };
 
-          if (yLoc > (c.height / 2) - 90 & yLoc < (c.height / 2) - 30) {
-            color_weight[0] = 1;
-            game.data.score.push(2);
-            game.data.total_score = game.data.total_score + 2;
-            sparks.push(new MakeSpark('zone1', 0, 2));
-          } else if (yLoc > (c.height / 2) - 30 & yLoc < (c.height / 2) + 30) {
-            color_weight[1] = 1;
-            game.data.score.push(10);
-            game.data.total_score = game.data.total_score + 10;
-            sparks.push(new MakeSpark('zone2', 1, 10));
-          } else if (yLoc > (c.height / 2) + 30 & yLoc < (c.height / 2) + 90) {
-            color_weight[2] = 1;  
-            game.data.score.push(1);
-            game.data.total_score = game.data.total_score + 1;
-            sparks.push(new MakeSpark('zone3', 2, 1));
-          } else if (yLoc > (c.height / 2) + 90 & yLoc < (c.height / 2) + 150) {
-            color_weight[3] = 1;  
-            game.data.score.push(3); 
-            game.data.total_score = game.data.total_score + 3;
-            sparks.push(new MakeSpark('zone4', 3, 3));
-          } else {
+          game.data.nPress++;
+
+          // instantaneous press rate
+          if (game.data.tPress.length > 1) {
+            game.data.press_rate.push(1 / (game.data.tPress[game.data.tPress.length - 1] - game.data.tPress[game.data.tPress.length - 2]));
+          }
+
+          // press outcome (if button pressed in zone)
+          for (let z = 0; z < zone_values.length; z++) {
+            if (ball.position.y > (c.height / 2) + zone1_shift + (z * zone_size) & ball.position.y < (c.height / 2) + zone1_shift + ((z + 1) * zone_size)) {
+              color_weight[z] = 1;
+              game.data.score.push(zone_values[z]);
+              game.data.total_score = game.data.total_score + zone_values[z];
+              outcomes.push(new MakeOutcome(z, zone_values[z]));
+            };
+          };
+
+          // press outcome (if button not pressed in a zone)
+          if (color_weight.reduce((partialSum, a) => partialSum + a, 0) == 2) {
             game.data.score.push(0);
           };
 
-          game.data.nPress++;
+          // reset zone color after 100ms
           setTimeout(() => { 
             color_weight = [.5, .5, .5, .5];
           }, 100);
+
+          // apply force to ball
           Body.applyForce( ball, {x: ball.position.x, y: ball.position.y}, {x: 0, y: -force});
-          //console.log(game.data.nPress / game.data.tPress[game.data.tPress.length - 1]);
-          let pps_inst = 1 / (game.data.tPress[game.data.tPress.length - 1] - game.data.tPress[game.data.tPress.length - 2]);
-          if (pps_inst) pps.push(pps_inst);
-          console.log(pps.reduce((partialSum, a) => partialSum + a, 0) / pps.length);
-        }
+   
+          console.log(game.data.press_rate.reduce((partialSum, a) => partialSum + a, 0) / game.data.press_rate.length);
+        };
       };
 
-      (function render_func() {
-        let bodies = Composite.allBodies(engine.world)
-        let constraints = Composite.allConstraints(engine.world);
-        const req = window.requestAnimationFrame(render_func);
-        
-        ctx.fillStyle = 'black';
-        ctx.fillRect(0, 0, c.width, c.height);
-        ctx.font = "30px Arial";
-        let zones = Object.keys(rgb);
-
-        for (let z = 0; z < zones.length; z++) {
-          ctx.fillStyle = `rgb(${rgb[zones[z]][0] * color_weight[z]}, ${rgb[zones[z]][1] * color_weight[z]}, ${rgb[zones[z]][2] * color_weight[z]})`
-          ctx.fillRect(0, (c.height / 2) + height_adj + (64 * z), c.width, 64);
-          ctx.fillStyle = 'black';
-          let text_width = ctx.measureText(`${zone_values[z]}`).width;
-          ctx.fillText(`${zone_values[z]}`, (c.width / 2) - (text_width / 2), (c.height / 2) + height_adj + (64 * z) + 32 + (txt_height / 2));    
-        };
-
-        // draw score
+      function drawScore() {
         ctx.fillStyle = '#D3D3D3';
         let score_width = ctx.measureText(`Points: ${game.data.total_score}`).width;
-        ctx.fillText(`Points: ${game.data.total_score}`, (c.width / 2) - (score_width / 2), 80);
-     
+        ctx.fillText(`Points: ${game.data.total_score}`, (c.width / 2) - (score_width / 2), 80);   
+      };
 
-        // draw bodies
+      function drawBodies() {
+        let bodies = Composite.allBodies(engine.world)
         for (var i = 0; i < bodies.length; i += 1) {
           ctx.beginPath();
           ctx.fillStyle = 'white';
@@ -1185,11 +1154,43 @@ const dmPsych = (function() {
           ctx.lineWidth = 1;
           ctx.stroke();
         };
+      };
 
-        if (increment) {
-          explode();
-        }
+      function drawZones() {
+        for (let z = 0; z < zone_values.length; z++) {
+          ctx.fillStyle = `rgb(${rgb[z][0]*color_weight[z]}, ${rgb[z][1]*color_weight[z]}, ${rgb[z][2]*color_weight[z]})`
+          ctx.fillRect(0, (c.height / 2) + zone1_shift + (zone_size * z), c.width, zone_size);
+          ctx.fillStyle = 'black';
+          let text_width = ctx.measureText(`${zone_values[z]}`).width;
+          ctx.fillText(`${zone_values[z]}`, (c.width / 2) - (text_width / 2), (c.height / 2) + zone1_shift + (zone_size * z) + (zone_size / 2) + (outcome_height / 2));    
+        };        
+      };
 
+      function drawCircle() {
+        if (ball.position.y > (c.height / 2) - 80 & ball.position.y < (c.height / 2) + 80) {
+          ctx.strokeStyle = 'red';
+        } else {
+          ctx.strokeStyle = 'white';
+        };
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(c.width / 2, c.height / 2, 80, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.lineWidth = 1;
+      };
+
+      (function render_func() {
+        const req = window.requestAnimationFrame(render_func);
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, c.width, c.height);
+        ctx.font = "30px Arial";
+
+
+        drawCircle();
+        drawZones();
+        drawScore();
+        showOutcome();
+        drawBodies();
 
         Engine.update(engine, (1000/60)*fpsAdjust);
 
